@@ -1,0 +1,182 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task",
+    "round",
+    "fingerprint",
+    "verdict",
+    "blockers",
+    "polish",
+    "hardening",
+    "prior_issues",
+    "verification"
+  ],
+  "properties": {
+    "task": {
+      "type": "string"
+    },
+    "round": {
+      "type": "integer"
+    },
+    "fingerprint": {
+      "type": "string"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "reject",
+        "incomplete"
+      ]
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "summary",
+          "where",
+          "trigger",
+          "actual",
+          "why",
+          "evidence",
+          "speculative",
+          "likelihood"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "where": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "actual": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "speculative": {
+            "type": "boolean"
+          },
+          "likelihood": {
+            "type": "string",
+            "enum": [
+              "normal_use",
+              "plausible_failure"
+            ]
+          }
+        }
+      }
+    },
+    "polish": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "where",
+          "note"
+        ],
+        "properties": {
+          "where": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "hardening": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "where",
+          "trigger",
+          "note"
+        ],
+        "properties": {
+          "where": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "prior_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "decision",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "close",
+              "keep_open"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command",
+          "status",
+          "note"
+        ],
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "not_run"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

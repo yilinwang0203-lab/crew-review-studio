@@ -1,0 +1,16 @@
+{
+  "scan": {
+    "include": ["**/*.py"],
+    "exclude": ["crew/**", "**/__pycache__/**", ".pytest_cache/**", ".git/**", ".venv/**"],
+    "symlinks": "reject"
+  },
+  "tasks": {
+    "task-01": {
+      "review": "single",
+      "requirements": "crew/task-01/requirements.md",
+      "verify": ["python3 -m unittest discover -s . -p 'test_*.py'"]
+    }
+  },
+  "max_rounds": 3,
+  "timeouts": {"dsh_minutes": 15, "codex_minutes": 20, "verify_minutes": 10}
+}
