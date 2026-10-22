@@ -1,0 +1,59 @@
+name: Public demo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - studio/studio.html
+      - studio/studio-records.css
+      - scripts/build_demo.py
+      - demo.json
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+  schedule:
+    - cron: '37 3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.state.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check demo deadline
+        id: state
+        run: |
+          expired=$(python3 scripts/build_demo.py --check-expired)
+          if [ "${{ github.event_name }}" != "schedule" ] || [ "$expired" = "true" ]; then
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build public files only
+        if: steps.state.outputs.publish == 'true'
+        run: python3 scripts/build_demo.py
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.state.outputs.publish == 'true'
+        with:
+          path: _site
+  deploy:
+    needs: build
+    if: needs.build.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy public demo or expiry page
+        id: deployment
+        uses: actions/deploy-pages@v4
