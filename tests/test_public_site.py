@@ -14,6 +14,7 @@ spec.loader.exec_module(demo)
 
 @pytest.fixture
 def public_root(tmp_path):
+    (tmp_path / 'VERSION').write_text('0.2.0\n')
     (tmp_path / 'studio').mkdir()
     for name in ('studio.html', 'studio-records.css'):
         shutil.copyfile(ROOT / 'studio' / name, tmp_path / 'studio' / name)
@@ -37,6 +38,7 @@ def test_public_build_contains_only_demo_assets(public_root):
     assert 'source-toggle' not in html
     assert 'PRIVATE_' not in html
     assert '公开演示' in html
+    assert 'v0.2.0' in html
     assert 'https://github.com/example/crew' in html
 
 

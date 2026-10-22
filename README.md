@@ -1,5 +1,7 @@
 # Crew Review Studio（CS）
 
+当前版本：**[v0.2.0](https://github.com/yilinwang0203-lab/crew-review-studio/releases/tag/v0.2.0)** · [更新记录](CHANGELOG.md)
+
 本地 AI 代码审查工作流与深色看板。实施者写交接包，DSH 初审，关键任务加 Codex 复审；Python 脚本保存证据、核对文件指纹并决定是否放行。
 
 **[在线交互演示](https://yilinwang0203-lab.github.io/crew-review-studio/)** · [MIT 开源许可证](LICENSE) · [参与贡献](CONTRIBUTING.md)

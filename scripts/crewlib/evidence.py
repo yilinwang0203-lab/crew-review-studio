@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from .common import CrewError, read_json
-from .verdict import extract_json, severity_of, summary_of, validate
+from .verdict import extract_json, normalize, severity_of, summary_of, validate
 
 WRITE_TOOLS = {"write", "edit", "multiedit", "apply_patch", "patch", "delete", "remove", "move", "rename", "mkdir"}
 
@@ -78,8 +78,11 @@ def adopted_problems(rd, rev, task, n, fp):
     final = (ad / "final.txt").read_text(encoding="utf-8")
     if not final.strip():
         out.append(f"{rev} 的原始结论 final.txt 为空")
-    elif extract_json(final) != v:
-        out.append(f"{rev} 的原始结论 final.txt 与采用的 verdict.json 不一致")
+    else:
+        raw = extract_json(final)
+        normalize(raw)   # 采用时做过同样的确定性规整（格式笔误），比对规整后的结果
+        if raw != v:
+            out.append(f"{rev} 的原始结论 final.txt 与采用的 verdict.json 不一致")
     if rev == "dsh":
         ev_final, ev_viol = dsh_scan(ad / "events.jsonl")
         if ev_final != final:

@@ -8,6 +8,7 @@ on:
       - studio/studio-records.css
       - scripts/build_demo.py
       - demo.json
+      - VERSION
       - .github/workflows/pages.yml
   workflow_dispatch:
   schedule:

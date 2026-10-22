@@ -3,6 +3,7 @@
 
 FAKE_MODE（可被 FAKE_MODE_DSH / FAKE_MODE_CODEX 覆盖）：
   pass | reject | incomplete | empty | garbage | sleep | exit1 | write | omit_prior | close_foreign
+  | prefixed_id | hardening_no_trigger | blocker_no_trigger（格式笔误，测自动规整）
 FAKE_FOREIGN_ID：close_foreign 模式下要越权关闭的问题 ID
 FAKE_PIDFILE：sleep 模式下记录子进程 pid
 FAKE_DELAY：给结论前先睡几秒（并行测试用）
@@ -101,6 +102,17 @@ def main():
             v["unknown"] = 1
         elif mode == "extra_nested":
             v["polish"][0]["extra"] = "x"
+        elif mode == "prefixed_id":            # 实测：dsh 把 blocker 编号写成历史问题格式
+            v["verdict"] = "reject"
+            v["blockers"] = [{"id": "dsh:R04:B1", "summary": "加法算成了减法", "where": "calc.py:2", "trigger": "调用 add(1, 2)",
+                              "actual": "返回 -1", "why": "要求返回两数之和", "evidence": "return a - b",
+                              "speculative": False, "likelihood": "normal_use"}]
+        elif mode == "hardening_no_trigger":   # 实测：加固项漏 trigger
+            del v["hardening"][0]["trigger"]
+        elif mode == "blocker_no_trigger":     # blocker 缺字段：不规整，仍判未完成
+            v["verdict"] = "reject"
+            v["blockers"] = [{"id": "B1", "summary": "x", "where": "calc.py:2", "actual": "-1", "why": "w",
+                              "evidence": "e", "speculative": False, "likelihood": "normal_use"}]
         final = json.dumps(v, ensure_ascii=False)
     if is_codex:
         with open(argv[argv.index("-o") + 1], "w", encoding="utf-8") as f:

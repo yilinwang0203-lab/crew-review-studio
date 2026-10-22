@@ -80,7 +80,7 @@ def test_garbage_with_keywords_is_plain_incomplete(proj, fake_env):
     fake_env.setenv("FAKE_MENTION_GARBAGE", "1")
     snapshot.snapshot(proj, "t1")
     m = reviewers.run(proj, "t1", "dsh")
-    assert m["outcome"] == "incomplete" and m["attempt"] == 1
+    assert m["outcome"] == "incomplete" and m["attempt"] == 2   # 不判外部故障；格式不合规自动再审一次（2026-10-22）
 
 
 def test_external_violation_still_invalid(proj, fake_env):

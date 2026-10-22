@@ -64,7 +64,9 @@ def test_reject_creates_issue(proj, fake_env):
 def test_incomplete_outcomes_then_exhausted(proj, fake_env, mode, word):
     fake_env.setenv("FAKE_MODE", mode)
     snapshot.snapshot(proj, "t1")
-    for k in (1, 2, 3):
+    # 格式类未完成（garbage）在同一次调用内自动再审一次（2026-10-22），故次数 2、3 由第一、二次调用用满
+    expect = (2, 3) if mode == "garbage" else (1, 2, 3)
+    for k in expect:
         m = reviewers.run(proj, "t1", "dsh")
         assert m["outcome"] == "incomplete" and m["attempt"] == k
         assert any(word in e for e in m["errors"])

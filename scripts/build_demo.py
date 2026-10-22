@@ -28,6 +28,7 @@ def replace_once(text, old, new):
 
 def build(output, now=None, root=ROOT):
     cfg, expires = settings(root)
+    version = (root / 'VERSION').read_text(encoding='utf-8').strip()
     now = now or datetime.now(timezone.utc)
     output = Path(output).absolute()
     # 只允许在已忽略的产物目录构建，避免误删源码或项目记录。
@@ -56,6 +57,7 @@ def build(output, now=None, root=ROOT):
         page = page.replace('Yilin 的工作区', '开源演示工作区').replace('个人空间', 'MIT OPEN SOURCE')
         page = page.replace('PERSONAL WORKSPACE', 'PUBLIC DEMO').replace('本地演示 · 未连接脚本', '公开演示 · 模拟数据')
         page = replace_once(page, '<title>Crew Studio — 审查室</title>', '<title>Crew Review Studio · 开源交互演示</title>')
+        page = replace_once(page, '<span class="version-badge">CONCEPT 03</span>', f'<span class="version-badge">v{escape(version)}</span>')
         banner = f'''<section class="public-demo" aria-label="公开演示说明"><div><span class="public-kicker">OPEN SOURCE · MIT</span><strong>独立审查，共同核对证据。</strong><p>可以体验任务、双审与放行；全部为模拟数据，不上传代码、不调用 AI。</p><small>本期演示开放至 {date}（北京时间）</small></div><a href="{repo}" target="_blank" rel="noopener noreferrer">GitHub 源码 ↗</a></section>'''
         page = replace_once(page, '<div class="content">', '<div class="content">' + banner)
         css = '''<style>.public-demo{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 32px;padding:22px 24px;border:1px solid #354251;border-left:3px solid #bcd9f5;border-radius:8px;background:#1b222b}.public-demo .public-kicker{display:block;color:#bcd9f5;font:9px var(--mono);letter-spacing:2px;margin-bottom:7px}.public-demo strong{font-size:17px;font-weight:500}.public-demo p{margin:6px 0;color:#a5b1bf;font-size:11px}.public-demo small{color:#8b9aab;font-size:10px}.public-demo>a{white-space:nowrap;padding:10px 15px;border:1px solid #4b5c70;border-radius:5px;color:#d2e5f8;font-size:11px}.public-demo>a:hover{background:#2a3847}@media(max-width:600px){.public-demo{align-items:flex-start;flex-direction:column;gap:13px;padding:18px;margin-bottom:25px}.public-demo strong{font-size:16px}}</style>'''

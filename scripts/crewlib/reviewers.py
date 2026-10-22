@@ -9,7 +9,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from . import external, issues, recover
+from . import external, issues, recover, verdict
 from .evidence import dsh_scan
 from .common import (MAX_ATTEMPTS, CrewError, Lock, counted_attempts, crash_point, invalidate, kill_group, latest_round,
                      next_attempt, now, read_json, reviewer_lock, round_dir, task_dir, write_json)
@@ -69,12 +69,13 @@ def run(project, task: str, reviewer: str) -> dict:
 
     外部故障（容量不足/断网/限流）在同一次调用内按 60/120/240 秒退避重试，每次是新 attempt、不计次数；
     额度用完不重试。等待期间只持审查员锁，不挡另一位审查员和 gate。
+    结论只因格式不合规而未完成时（自动规整后仍不合规），同一次调用内自动再审一次（计入次数上限）。
     """
     project = Path(project).resolve()
     td = task_dir(project, task)
     waits = external.backoff_seconds()
     with reviewer_lock(td, reviewer):
-        retry = 0
+        retry, format_retry = 0, False
         while True:
             # 任务锁在这两段只持有很短时间：另一位审查员同时进出时排队等待，而不是报错退出
             with Lock(td, wait=True):
@@ -82,6 +83,12 @@ def run(project, task: str, reviewer: str) -> dict:
             _execute(project, reviewer, ctx)
             with Lock(td, wait=True):
                 meta = _settle(td, reviewer, ctx)
+            if (meta["outcome"] == "incomplete" and not format_retry and verdict.format_only(meta["errors"])
+                    and counted_attempts(ctx["rv"]) < MAX_ATTEMPTS):
+                format_retry = True
+                print(f"{reviewer} attempt-{meta['attempt']:02d} 结论格式不合规（{meta['errors'][0]}），自动再审一次",
+                      flush=True)
+                continue
             if meta["outcome"] != "external" or not meta["external_retryable"] or retry >= len(waits):
                 return meta
             print(f"{reviewer} attempt-{meta['attempt']:02d} 外部故障：{meta['external_reason']}；"
@@ -167,7 +174,7 @@ def _settle(td, reviewer, ctx) -> dict:
     rd, rv, ad, k, n = ctx["rd"], ctx["rv"], ctx["ad"], ctx["k"], ctx["n"]
     final, violations, code, timed_out = ctx["final"], ctx["violations"], ctx["code"], ctx["timed_out"]
     open_ids = [i["id"] for i in read_json(rd / "frozen" / f"open-issues-{reviewer}.json")]
-    errors, obj = [], None
+    errors, obj, normalized = [], None, []
     try:
         obj = extract_json(final)
         if ctx["spawn_error"]:
@@ -183,6 +190,7 @@ def _settle(td, reviewer, ctx) -> dict:
         elif obj is None:
             errors.append("最终结论不是合法 JSON")
         else:
+            normalized = verdict.normalize(obj)
             errors += validate(obj, ctx["task"], n, ctx["fp"], open_ids, severity=severity_of(rd), summary=summary_of(rd))
             if not errors and obj["verdict"] == "incomplete":
                 errors.append("审查员自评未完成")
@@ -203,7 +211,7 @@ def _settle(td, reviewer, ctx) -> dict:
     meta = {"reviewer": reviewer, "attempt": k, "outcome": outcome, "errors": errors,
             "violations": violations, "exit_code": code, "timed_out": timed_out,
             "started": ctx["started"], "ended": now(), "seconds": round(time.monotonic() - ctx["t0"], 1),
-            "command": ctx["cmd"], "version": ctx["version"]}
+            "command": ctx["cmd"], "version": ctx["version"], "normalized": normalized}
     if ext:
         meta.update(external_reason=ext["reason"], external_kind=ext["kind"], external_retryable=ext["retryable"])
     if violations:

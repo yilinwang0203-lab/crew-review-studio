@@ -107,10 +107,11 @@ def test_b6_extra_fields_rejected(proj):
     assert code == 2 and "多余字段" in out
 
 
-def test_b6_extra_nested_fields_rejected(proj):
+def test_b6_extra_nested_fields_normalized(proj):
+    """2026-10-22 起：不拦放行的 polish/hardening 条目多余字段自动删除并留痕（原为判未完成）。"""
     crew(proj, "snapshot", "t1")
     code, out = crew(proj, "review", "t1", "--by", "dsh", env_extra={"FAKE_MODE": "extra_nested"})
-    assert code == 2 and "多余字段" in out
+    assert code == 0 and "已自动规整" in out and "删除多余字段 extra" in out
 
 
 def test_b7_partial_ledger_entry_repaired(proj):

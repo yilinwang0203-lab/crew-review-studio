@@ -32,6 +32,7 @@ description: 开发系统时的小团队审查流程：每个计划任务做完�
 - gate 退出码 0 放行 → 下一个任务。
 - 1 退回/失效 → 按 blocker 修改，更新 handoff，重新 snapshot。我认为某条不该改，就在 handoff 写"不改 + 理由"，由提出者下一轮确认；我不能自己关闭 blocker。
 - 2 等待 → 还有审查员没跑完；review 返回"未完成"时可同轮重跑（最多 3 次）。
+- v0.2.0 起，格式笔误会先自动规整并记录到 meta.normalized；若仍仅因格式错误而未完成，同一次 review 自动补审一次，计入上述 3 次上限。blocker 缺字段不补，带 blocker 特有字段的 polish / hardening 不作降级规整。
 - review 退出码 4 = 外部故障（容量不足/断网/限流/额度用完）：不计入 3 次；容量/断网/限流已在同一次 review 内按 60/120/240 秒自动重试过，额度用完不重试；稍后直接重跑 review。
 - 3 需要用户裁决 → 停下，在对话里列出分歧点、双方依据、我的建议，等用户决定。用户决定接受现状 → `decide <任务> --accept --reason …`（未关闭问题记入项目级 crew/accepted-risks.json，之后各任务审查员不得再作为 blocker 提出）；用户决定再给一轮 → `approve --kind extra_round`。
 - 项目级 crew/accepted-risks.json（由 decide 写入）每轮 snapshot 时冻结进两位审查员指令：已接受的风险不得再作为 blocker；不手改该文件。

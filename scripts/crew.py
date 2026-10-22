@@ -80,6 +80,8 @@ def main(argv=None) -> int:
             print(f"{args.by} attempt-{m['attempt']:02d}：{m['outcome']}（{m['seconds']} 秒）")
             for e in m["errors"]:
                 print(f"- {e}")
+            for note in m.get("normalized") or []:
+                print(f"- 已自动规整：{note}")
             return 0 if m["outcome"] in ("pass", "reject") else 2
         if args.cmd == "gate":
             rep = gate.gate(args.project, args.task)

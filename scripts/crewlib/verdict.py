@@ -16,6 +16,7 @@ HARDENING = ["where", "trigger", "note"]
 LIKELIHOOD = ("normal_use", "plausible_failure")
 LIKELIHOOD_LABEL = {"normal_use": "正常使用就会遇到", "plausible_failure": "合理故障下会遇到"}
 PRIOR = ["id", "decision", "reason"]
+BLOCKER_ONLY = [f for f in BLOCKER if f not in POLISH + HARDENING]   # id/summary/actual/why/evidence/speculative/likelihood
 VERIF = ["command", "status", "note"]
 VERDICTS = ("pass", "reject", "incomplete")
 BID = re.compile(r"^B\d+$")
@@ -89,6 +90,49 @@ def _items(v, key, fields, errors):
             continue
         good.append(it)
     return good
+
+
+def normalize(v) -> list:
+    """校验前自动规整只影响格式、不影响结论的笔误，原地修改，返回中文说明（记入 meta.normalized）。
+    · blocker 编号写成「dsh:R04:B1」「R2-B3」等：截取末尾的 B 编号。
+    · polish / hardening（不拦放行）条目缺字段补「（未写）」、多余字段删除、非文本值转文本。
+    blocker 缺字段、取值非法等仍交给 validate 判未完成，不在这里放水。polish / hardening 条目里若带
+    blocker 特有字段（summary、actual、why 等），可能是真问题放错了位置，整条不动，交 validate 判未完成
+    （审查 dsh:R01:B1：删掉这些字段会把 blocker 降级成无害备注放行）。"""
+    notes = []
+    if not isinstance(v, dict):
+        return notes
+    for b in v.get("blockers") or []:
+        if isinstance(b, dict) and isinstance(b.get("id"), str) and not BID.match(b["id"]):
+            m = re.search(r"B\d+\s*$", b["id"])
+            if m:
+                notes.append(f"blocker 编号「{b['id']}」规整为「{m.group(0).strip()}」")
+                b["id"] = m.group(0).strip()
+    for key, fields in (("polish", POLISH), ("hardening", HARDENING)):
+        items = v.get(key)
+        if not isinstance(items, list):
+            continue
+        for i, it in enumerate(items):
+            if not isinstance(it, dict) or any(f in it for f in BLOCKER_ONLY):
+                continue
+            for f in fields:
+                if f not in it:
+                    it[f] = "（未写）"
+                    notes.append(f"{key}[{i}] 缺字段 {f}，补「（未写）」")
+                elif not isinstance(it[f], str):
+                    it[f] = json.dumps(it[f], ensure_ascii=False) if not isinstance(it[f], (int, float)) else str(it[f])
+                    notes.append(f"{key}[{i}].{f} 转为文本")
+            for f in [f for f in it if f not in fields]:
+                del it[f]
+                notes.append(f"{key}[{i}] 删除多余字段 {f}")
+    return notes
+
+
+def format_only(errors) -> bool:
+    """未完成是否只因结论格式不合规（可自动重审一次）；超时、退出码、写入违规、自评未完成等不算。"""
+    hard = ("超时", "退出码", "写入/升权", "没有输出最终结论", "审查员自评未完成", "外部故障", "处理审查结论时出错",
+            "无权关闭")
+    return bool(errors) and not any(h in e for e in errors for h in hard)
 
 
 def summary_of(rd) -> bool:
