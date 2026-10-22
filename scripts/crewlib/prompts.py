@@ -45,11 +45,25 @@ def scope_text(round_no: int, changes: str = None) -> str:
     return "\n".join([head, body, rule])
 
 
+def verify_text(task: str, round_no: int, verify: list) -> str:
+    """必做验证在开轮时（审查开始前）已由流程在可写环境跑完：告诉审查员结果在哪，免得重跑（2026-10-22 提速）。"""
+    if not verify:
+        return "（本任务没有配置必做验证命令）"
+    lines = ["开轮时流程已在可写环境里依次运行下列命令，审查开始前已全部结束。请先读结果文件"
+             "（result.json 的 exit_code / ok / timed_out，output.log 为完整输出），不要重跑这些命令："]
+    for i, v in enumerate(verify, 1):
+        cmd = v["cmd"] if isinstance(v, dict) else str(v)
+        base = f"crew/{task}/round-{round_no:02d}/verify/{i:02d}"
+        lines.append(f"{i}. `{cmd}` → {base}/result.json、{base}/output.log")
+    return "\n".join(lines)
+
+
 def build(reviewer: str, task: str, round_no: int, fp: str, handoff: str, req: str, mine: list,
-          scope: str = None, accepted_risks: list = None) -> str:
+          scope: str = None, accepted_risks: list = None, verify: list = None) -> str:
     t = (PROMPT_DIR / f"{reviewer}.md").read_text(encoding="utf-8")
     pairs = [
         ("{{SCOPE}}", scope or scope_text(round_no)),
+        ("{{VERIFY}}", verify_text(task, round_no, verify or [])),
         ("{{TASK}}", task), ("{{ROUND}}", str(round_no)), ("{{FINGERPRINT}}", fp),
         ("{{OPEN_ISSUE_IDS}}", ",".join(i["id"] for i in mine) or "无"),
         ("{{EXAMPLE}}", json.dumps(EXAMPLE, ensure_ascii=False, indent=2)),

@@ -96,7 +96,8 @@ def snapshot(project, task: str) -> dict:
         for rev in rules["reviewers"]:
             mine = issues.open_for(data, rev)
             write_json(fz / f"open-issues-{rev}.json", mine)
-            (fz / f"prompt-{rev}.md").write_text(prompts.build(rev, task, n, fp, handoff, req, mine, scope, risks),
+            (fz / f"prompt-{rev}.md").write_text(prompts.build(rev, task, n, fp, handoff, req, mine, scope, risks,
+                                                               rules["verify"]),
                                                  encoding="utf-8")
         write_json(fz / "hashes.json", {p.name: sha256_bytes(p.read_bytes()) for p in sorted(fz.iterdir())})
         (rd / "manifest.txt").write_text(fingerprint.manifest_text(files), encoding="utf-8")

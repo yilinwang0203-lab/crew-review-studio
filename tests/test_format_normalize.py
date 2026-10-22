@@ -94,3 +94,21 @@ def test_misplaced_blocker_in_non_blocking_list_is_not_normalized(key):
     assert verdict.normalize(v) == [] and v[key][0] == item
     errors = verdict.validate(v, "t1", 1, "fp", [])
     assert any("多余字段" in e or "缺少字段" in e for e in errors) and verdict.format_only(errors)
+
+
+# ---- 2026-10-22 提速：提示词告知必做验证结果位置、省步骤 ----
+
+def test_prompt_lists_verify_results_and_efficiency_rule(proj):
+    from crewlib import prompts
+    p = prompts.build("dsh", "t1", 2, "f" * 64, "交接", "要求", [], None, [],
+                      [{"cmd": "python3 -m pytest -q", "expect": None, "timeout_minutes": None}])
+    assert "已由流程跑完的必做验证" in p and "crew/t1/round-02/verify/01/result.json" in p
+    assert "不要重跑这些命令" in p and "30 次左右" in p and "{{VERIFY}}" not in p
+    assert "没有配置必做验证" in prompts.build("codex", "t1", 1, "f" * 64, "交接", "要求", [])
+
+
+def test_snapshot_freezes_prompt_with_verify_paths(proj):
+    snapshot.snapshot(proj, "t1")
+    text = (proj / "crew" / "t1" / "round-01" / "frozen" / "prompt-dsh.md").read_text(encoding="utf-8")
+    assert "crew/t1/round-01/verify/01/result.json" in text
+    assert (proj / "crew" / "t1" / "round-01" / "verify" / "01" / "result.json").exists()
